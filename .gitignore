@@ -1,26 +1,35 @@
+# Gradle files
+.gradle/
+build/
+/*/build/
+
+# IntelliJ IDEA
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+*.iws
+
+# Local configuration
 local.properties
 
-# APKs
-*.apk
-app/release/
+# Log files
+*.log
 
-# Build folders
-/build
-/*/build
+# Android Studio Captures
+captures/
 
-# Scripts
+# Native build
+.externalNativeBuild/
+.cxx/
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google Services
+google-services.json
+
+# DS_Store
+.DS_Store
+
+# Custom scripts
 push.bat

@@ -43,3 +43,8 @@ Since vNavi is a pure engineering project, you can compile it directly from sour
 ---
 
 *Pure. Light. Fast. This is vNavi.*
+
+## 📝 License
+MIT License. Keep it light, keep it fast.
+
+Developed with ❤️ by LiferLighdow

@@ -1,7 +1,7 @@
 # vNavi Browser
 
 <p align="center">
-  <img src="app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" width="100" height="100">
+  <img src="logo.svg" width="100" height="100" alt="vNavi Logo">
 </p>
 
 <p align="center">
@@ -33,12 +33,21 @@ vNavi is an ultra-lightweight, high-performance web navigator designed for users
     - **Smart Auto-Hide**: The address bar disappears when scrolling down and reappears on scroll up.
     - **Find in Page**: Native text search with result highlighting and navigation.
     - **Custom User-Agent**: Masquerade as an iPhone, Tablet, or Desktop to bypass site limitations.
-- **Efficient Downloader**: Integrated with Android's system Download Manager with smart filename guessing.
+
+## 🎨 Visual Identity & Iconography
+
+vNavi's visual language is built on the same "zero-waste" philosophy as its code. 
+
+### Modern Adaptive Icon
+The application icon is not just a bitmap; it's a precision-engineered **Android Vector Drawable**. 
+- **Core Design**: A minimalist browser frame combined with a compass, representing navigation and speed.
+- **Implementation**: Hand-coded XML in `ic_launcher_foreground_color.xml`, ensuring the icon remains sharp at any resolution without adding to the APK size.
+- **Aesthetic**: Uses high-contrast Slate and Slate-Dark tones (`#0F172A`, `#1E293B`) to complement the AMOLED-focused interface.
 
 ## 🛠 Engineering Philosophy
 
 ### The "Under 100KB" Challenge
-Most modern Android apps exceed 10MB just for the "Hello World" boilerplate due to Jetpack and Material dependencies. vNavi takes the opposite path:
+Most modern Android apps exceed 10MB just for the "Hello World" boilerplate. vNavi takes the opposite path:
 - **Pure Java**: Written in Java to avoid the ~1MB overhead of the Kotlin Standard Library.
 - **Zero-Dependency**: No `appcompat` means no hundreds of unused XML resources and method counts.
 - **Hybrid UI**: We use a unique architecture where the complex UI (Settings, Home Dashboard) is rendered via high-performance **Local HTML5 (Assets)**, keeping the DEX bytecode minimal.
@@ -60,7 +69,7 @@ Most modern Android apps exceed 10MB just for the "Hello World" boilerplate due 
 - **Android Studio**: Ladybug or newer.
 - **Build System**: Gradle 8.0+.
 - **Min SDK**: API 21 (Android 5.0).
-- **Target SDK**: API 35/36/37 (Android 15-17).
+- **Target SDK**: API 37 (Android 17).
 
 ## 📥 Installation
 

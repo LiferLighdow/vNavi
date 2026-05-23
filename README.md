@@ -1,50 +1,77 @@
 # vNavi Browser
 
-> **Inspired by Min Browser, re-engineered for Android under 100KB.**
+<p align="center">
+  <img src="app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" width="100" height="100">
+</p>
 
-vNavi is an ultra-lightweight, high-performance web navigator designed for users who crave speed, privacy, and extreme efficiency. By stripping away all external dependencies and using pure native APIs, vNavi achieves a fully functional browsing experience in a fraction of the size of traditional browsers.
+<p align="center">
+  <strong>Inspired by Min Browser, re-engineered for Android under 100KB.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Language-Pure%20Java-orange.svg">
+  <img src="https://img.shields.io/badge/Android-5.0%20--%2017-green.svg">
+  <img src="https://img.shields.io/badge/Size-%3C%20100KB-blue.svg">
+  <img src="https://img.shields.io/badge/License-MIT-lightgrey.svg">
+  <img src="https://img.shields.io/badge/Dependencies-Zero-red.svg">
+</p>
+
+---
+
+vNavi is an ultra-lightweight, high-performance web navigator designed for users who crave speed, privacy, and extreme efficiency. By stripping away all external dependencies and utilizing pure native APIs, vNavi achieves a premium browsing experience in a binary size that fits within a single network packet.
 
 ## 🚀 Key Features
 
-- **Extreme Lightweight**: Target binary size under 100KB. No AndroidX, no Material Components, zero bloated libraries.
+- **Extreme Lightweight**: Target binary size < 100KB. Zero AndroidX, Zero Material Components, Zero bloated libraries.
 - **Safari-inspired UI**: A modern, single-hand friendly interface featuring a floating bottom "Pill" address bar.
 - **Pill-Tab Switching**: Fluidly switch between multiple tabs by swiping left or right on the address bar.
-- **AMOLED Pure Black**: Built-in #000000 theme for maximum battery saving and visual comfort on OLED screens.
+- **AMOLED Pure Black**: Built-in `#000000` theme for maximum battery saving and visual comfort on OLED screens.
 - **Privacy & Security**:
     - **Native Ad Block**: Built-in domain-level interception via `shouldInterceptRequest`.
     - **JavaScript Toggle**: Easily enable or disable scripts per session.
-- **Customizable Home Page**: A clean, HTML5-based dashboard for your favorite sites with automatic high-res favicon fetching.
 - **Advanced Navigation**:
     - **Smart Auto-Hide**: The address bar disappears when scrolling down and reappears on scroll up.
     - **Find in Page**: Native text search with result highlighting and navigation.
-    - **Custom User-Agent**: Masquerade as an iPhone, Android Tablet, or Desktop (Chrome/Safari) to bypass site limitations.
-- **Efficient Downloader**: Smart filename guessing and direct integration with Android's system Download Manager.
+    - **Custom User-Agent**: Masquerade as an iPhone, Tablet, or Desktop to bypass site limitations.
+- **Efficient Downloader**: Integrated with Android's system Download Manager with smart filename guessing.
 
-## 🛠 Tech Stack & Engineering
+## 🛠 Engineering Philosophy
 
-- **Language**: Pure Java (to avoid Kotlin Standard Library overhead).
-- **Minimum Support**: Android 5.0 (API 21+).
-- **Target SDK**: Android 15/16 (API 35/36) for modern performance.
-- **UI Architecture**: A hybrid of native Java View management and high-performance Local HTML5 (Assets) for settings and dashboards.
-- **DEX Optimization**: ProGuard/R8 enabled to minify the code to the absolute limit.
+### The "Under 100KB" Challenge
+Most modern Android apps exceed 10MB just for the "Hello World" boilerplate due to Jetpack and Material dependencies. vNavi takes the opposite path:
+- **Pure Java**: Written in Java to avoid the ~1MB overhead of the Kotlin Standard Library.
+- **Zero-Dependency**: No `appcompat` means no hundreds of unused XML resources and method counts.
+- **Hybrid UI**: We use a unique architecture where the complex UI (Settings, Home Dashboard) is rendered via high-performance **Local HTML5 (Assets)**, keeping the DEX bytecode minimal.
+- **DEX Optimization**: Aggressive R8/ProGuard rules to strip every unused byte.
 
 ## 📱 Gestures & Controls
 
-- **Switch Tabs**: Swipe left/right on the bottom address bar.
-- **Search**: Tap the center of the address bar for an immersive search overlay.
-- **Tab Management**: Long-press the `❐` icon in the menu to see and close active tabs.
-- **Edit Favorites**: Long-press any icon on the home page to edit or delete.
-- **Save Images**: Long-press any image on a webpage to download it directly.
+| Action | Control |
+| :--- | :--- |
+| **Switch Tabs** | Swipe Left/Right on the bottom pill bar |
+| **Search** | Tap the center of the pill bar |
+| **Tab Management** | Long-press the `❐` icon in the menu |
+| **Manage Favorites** | Long-press any icon on the Home page |
+| **Save Images** | Long-press any image on a webpage |
+| **Reload Page** | Select `↻` in menu or Pull down from top |
+
+## 🏗 Build Requirements
+
+- **Android Studio**: Ladybug or newer.
+- **Build System**: Gradle 8.0+.
+- **Min SDK**: API 21 (Android 5.0).
+- **Target SDK**: API 35/36/37 (Android 15-17).
 
 ## 📥 Installation
 
-Since vNavi is a pure engineering project, you can compile it directly from source using Android Studio. The resulting APK will be surprisingly small, often fitting within a single network packet.
+Compile directly from source using Android Studio. The resulting APK is optimized for direct installation and side-loading.
+
+```bash
+./gradlew assembleRelease
+```
 
 ---
 
 *Pure. Light. Fast. This is vNavi.*
 
-## 📝 License
-MIT License. Keep it light, keep it fast.
-
-Developed with ❤️ by LiferLighdow
+Developed with ❤️ by **LiferLighdow**

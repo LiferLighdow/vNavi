@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId = "com.liferlighdow.vnavi"
         minSdk = 21
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
     }
@@ -31,4 +31,5 @@ android {
 }
 
 dependencies {
+    // Zero dependencies for extreme lightweight performance.
 }

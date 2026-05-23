@@ -1,0 +1,65 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 1. 瀏覽器主視窗（1:1 飽滿正方形外框，帶有精緻圓角與邊框） -->
+    <path
+        android:pathData="M18,12 L90,12 A6,6 0 0,1 96,18 L96,90 A6,6 0 0,1 90,96 L18,96 A6,6 0 0,1 12,90 L12,18 A6,6 0 0,1 18,12 Z"
+        android:fillColor="#0F172A"
+        android:strokeColor="#334155"
+        android:strokeWidth="2"/>
+
+    <!-- 2. 瀏覽器頂部工具列背景（上半部圓角貼合） -->
+    <path
+        android:pathData="M18,13 L90,13 A5,5 0 0,1 95,18 L95,34 L13,34 L13,18 A5,5 0 0,1 18,13 Z"
+        android:fillColor="#1E293B"/>
+
+    <!-- 3. 工具列與網頁內容區的分隔線 -->
+    <path
+        android:pathData="M12,34 L96,34"
+        android:strokeColor="#334155"
+        android:strokeWidth="1.5"/>
+
+    <!-- 4. 左上角視窗控制紐（經典紅、黃、綠三色按鈕，精緻微型化） -->
+    <!-- 紅色關閉鈕 -->
+    <path
+        android:pathData="M20,23m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0"
+        android:fillColor="#EF4444"/>
+    <!-- 黃色最小化鈕 -->
+    <path
+        android:pathData="M27,23m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0"
+        android:fillColor="#F59E0B"/>
+    <!-- 綠色全螢幕鈕 -->
+    <path
+        android:pathData="M34,23m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0"
+        android:fillColor="#10B981"/>
+
+    <!-- 5. 簡約網址列（右側置中置放） -->
+    <path
+        android:pathData="M46,18 L88,18 A2,2 0 0,1 90,20 L90,26 A2,2 0 0,1 88,28 L46,28 A2,2 0 0,1 44,26 L44,20 A2,2 0 0,1 46,18 Z"
+        android:fillColor="#0F172A"/>
+
+    <!-- ======================================================= -->
+    <!-- 6. 置中指南針（中心點精密定位於 54, 65，完美避開工具列） -->
+    <!-- ======================================================= -->
+
+    <!-- 指南針外圓（精緻 3dp 粗線條） -->
+    <path
+        android:pathData="M54,47a18,18 0 1,0 0,36a18,18 0 1,0 0,-36z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"/>
+
+    <!-- 指南針紅色北方（高飽和度紅色） -->
+    <path
+        android:pathData="M54,51 L58,65 L50,65 Z"
+        android:fillColor="#EF4444"/>
+
+    <!-- 指南針白色南方（純白極簡） -->
+    <path
+        android:pathData="M54,79 L58,65 L50,65 Z"
+        android:fillColor="#F8FAFC"/>
+
+</vector>

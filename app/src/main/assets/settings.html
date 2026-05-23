@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Settings</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card: #1c1c1e;
+            --accent: #0A84FF;
+            --text: #ffffff;
+            --dim: #8e8e93;
+            --danger: #FF453A;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .header { display: flex; align-items: center; margin: 20px 0 30px 0; }
+        .back-btn { font-size: 24px; margin-right: 15px; cursor: pointer; }
+        h1 { font-size: 24px; margin: 0; }
+
+        .section {
+            background: var(--card);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .row {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 0.5px solid #2c2c2e;
+            cursor: pointer;
+        }
+        .row:last-child { border-bottom: none; }
+
+        .title { font-size: 16px; }
+        .desc { font-size: 12px; color: var(--dim); margin-top: 2px; }
+        .val { color: var(--accent); font-weight: 500; font-size: 14px; }
+
+        /* Custom Modal */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .modal {
+            background: var(--card);
+            width: 85%;
+            max-width: 320px;
+            border-radius: 20px;
+            padding: 20px 0;
+            border: 0.5px solid #3a3a3c;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-title { padding: 0 24px 15px 24px; font-size: 18px; font-weight: 600; border-bottom: 0.5px solid #2c2c2e; }
+        .option-list { overflow-y: auto; flex: 1; }
+        .opt {
+            padding: 15px 24px;
+            border-bottom: 0.5px solid #2c2c2e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .opt:last-child { border-bottom: none; }
+        .opt:active { background: #2c2c2e; }
+        .opt.selected { color: var(--accent); }
+
+        .modal-footer { padding: 10px 20px; text-align: right; }
+        .cancel-link { color: var(--accent); font-weight: 600; padding: 10px; cursor: pointer; }
+
+        .version { text-align: center; color: var(--dim); font-size: 11px; margin-top: 40px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="back-btn" onclick="window.location.href='index.html'">‹</div>
+        <h1>Settings</h1>
+    </div>
+
+    <!-- General -->
+    <div class="section">
+        <div class="row" onclick="openPicker('engine')">
+            <div>
+                <div class="title">Search Engine</div>
+                <div class="desc" id="engine_desc">Google</div>
+            </div>
+            <div class="val" id="engine_val">Google</div>
+        </div>
+        <div class="row" onclick="openPicker('ua')">
+            <div>
+                <div class="title">User-Agent</div>
+                <div class="desc">How sites see you</div>
+            </div>
+            <div class="val" id="ua_val">Default</div>
+        </div>
+    </div>
+
+    <!-- Privacy -->
+    <div class="section">
+        <div class="row">
+            <div>
+                <div class="title">Ad Block</div>
+                <div class="desc">Filter ads & trackers</div>
+            </div>
+            <input type="checkbox" id="ad_toggle" onchange="updateAdBlock(this.checked)">
+        </div>
+        <div class="row">
+            <div>
+                <div class="title">JavaScript</div>
+                <div class="desc">Enable scripts</div>
+            </div>
+            <input type="checkbox" id="js_toggle" onchange="updateJS(this.checked)">
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="row" onclick="openConfirm('Clear Cache?', () => Android.clearCache())">
+            <div class="title">Clear Cache</div>
+            <div style="color: var(--accent);">Clear</div>
+        </div>
+    </div>
+
+    <div class="version">vNavi Browser<br>Pure. Light. Fast.</div>
+
+    <!-- Picker Modal -->
+    <div class="overlay" id="pickerOverlay">
+        <div class="modal">
+            <div class="modal-title" id="pickerTitle">Select Option</div>
+            <div class="option-list" id="optionList"></div>
+            <div class="modal-footer">
+                <span class="cancel-link" onclick="closePicker()">CLOSE</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const engines = {
+            google: 'Google', searxng: 'SearXNG', brave: 'Brave', startpage: 'Startpage',
+            mojeek: 'Mojeek', metager: 'MetaGer', duckduckgo: 'DuckDuckGo', ecosia: 'Ecosia',
+            qwant: 'Qwant', bing: 'Bing', yahoo: 'Yahoo!', yandex: 'Yandex',
+            baidu: 'Baidu', naver: 'Naver', seznam: 'Seznam'
+        };
+
+        const uas = {
+            default: 'Default',
+            iphone: 'iPhone (Safari)',
+            android_tablet: 'Android Tablet',
+            desktop_chrome: 'Desktop (Chrome)',
+            desktop_safari: 'Desktop (Safari)'
+        };
+
+        function openPicker(type) {
+            const list = document.getElementById('optionList');
+            const title = document.getElementById('pickerTitle');
+            list.innerHTML = '';
+
+            if (type === 'engine') {
+                title.innerText = 'Search Engine';
+                Object.keys(engines).forEach(k => addOpt(list, engines[k], k, 'engine'));
+            } else if (type === 'ua') {
+                title.innerText = 'User-Agent';
+                Object.keys(uas).forEach(k => addOpt(list, uas[k], k, 'ua'));
+            }
+            document.getElementById('pickerOverlay').style.display = 'flex';
+        }
+
+        function addOpt(parent, label, key, type) {
+            const current = localStorage.getItem(type) || (type === 'engine' ? 'google' : 'default');
+            const div = document.createElement('div');
+            div.className = 'opt' + (current === key ? ' selected' : '');
+            div.innerHTML = `<span>${label}</span>${current === key ? '✓' : ''}`;
+            div.onclick = () => {
+                localStorage.setItem(type, key);
+                if (type === 'engine') Android.setSearchEngine(key);
+                else Android.setUserAgent(key);
+                refreshUI();
+                closePicker();
+            };
+            parent.appendChild(div);
+        }
+
+        function closePicker() { document.getElementById('pickerOverlay').style.display = 'none'; }
+
+        function updateAdBlock(enabled) { localStorage.setItem('ad_block', enabled); Android.toggleAdBlock(enabled); }
+        function updateJS(enabled) { localStorage.setItem('js_enabled', enabled); Android.toggleJS(enabled); }
+
+        function refreshUI() {
+            const engine = localStorage.getItem('engine') || 'google';
+            const ua = localStorage.getItem('ua') || 'default';
+            document.getElementById('engine_val').innerText = engines[engine];
+            document.getElementById('engine_desc').innerText = engines[engine];
+            document.getElementById('ua_val').innerText = uas[ua];
+            document.getElementById('ad_toggle').checked = localStorage.getItem('ad_block') === 'true';
+            document.getElementById('js_toggle').checked = localStorage.getItem('js_enabled') !== 'false';
+        }
+
+        window.onload = refreshUI;
+
+        // Reuse Picker as Confirm for lightweight
+        function openConfirm(msg, action) {
+            if(confirm(msg)) action(); // Using native confirm for simplicity or can build custom
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="260dp"
+    android:layout_height="wrap_content"
+    android:background="@drawable/pill_background"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- 第一排：橫向導覽按鈕 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+        <TextView android:id="@+id/menu_back" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="‹" android:textColor="#FFFFFF" android:textSize="28sp" android:background="?android:attr/selectableItemBackgroundBorderless" />
+        <TextView android:id="@+id/menu_forward" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="›" android:textColor="#FFFFFF" android:textSize="28sp" android:background="?android:attr/selectableItemBackgroundBorderless" />
+        <TextView android:id="@+id/menu_refresh" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="↻" android:textColor="#FFFFFF" android:textSize="22sp" android:background="?android:attr/selectableItemBackgroundBorderless" />
+        <TextView android:id="@+id/menu_home" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="⌂" android:textColor="#FFFFFF" android:textSize="22sp" android:background="?android:attr/selectableItemBackgroundBorderless" />
+        <TextView android:id="@+id/menu_tabs" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="❐" android:textColor="#FFFFFF" android:textSize="20sp" android:background="?android:attr/selectableItemBackgroundBorderless" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="0.5dp" android:background="#3a3a3c" android:layout_marginVertical="4dp" />
+
+    <TextView
+        android:id="@+id/menu_find"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:text="Find in Page"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:background="?android:attr/selectableItemBackground" />
+
+    <TextView
+        android:id="@+id/menu_add_bookmark"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:text="Add to Favorites"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:background="?android:attr/selectableItemBackground" />
+
+    <TextView
+        android:id="@+id/menu_downloads"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:text="Downloads"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:background="?android:attr/selectableItemBackground" />
+
+    <TextView
+        android:id="@+id/menu_settings"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:text="Settings"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:background="?android:attr/selectableItemBackground" />
+
+</LinearLayout>

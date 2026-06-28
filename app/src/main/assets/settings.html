@@ -23,6 +23,7 @@
             overflow-x: hidden;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .header { display: flex; align-items: center; margin: 20px 0 30px 0; }
@@ -82,7 +83,6 @@
             align-items: center;
         }
         .opt:last-child { border-bottom: none; }
-        .opt:active { background: #2c2c2e; }
         .opt.selected { color: var(--accent); }
 
         .modal-footer { padding: 10px 20px; text-align: right; }
@@ -113,6 +113,13 @@
                 <div class="desc">How sites see you</div>
             </div>
             <div class="val" id="ua_val">Default</div>
+        </div>
+        <div class="row" onclick="openPicker('pos')">
+            <div>
+                <div class="title">Address Bar Position</div>
+                <div class="desc">Top or Bottom</div>
+            </div>
+            <div class="val" id="pos_val">Bottom</div>
         </div>
     </div>
 
@@ -170,6 +177,11 @@
             desktop_safari: 'Desktop (Safari)'
         };
 
+        const positions = {
+            top: 'Top',
+            bottom: 'Bottom'
+        };
+
         function openPicker(type) {
             const list = document.getElementById('optionList');
             const title = document.getElementById('pickerTitle');
@@ -181,19 +193,23 @@
             } else if (type === 'ua') {
                 title.innerText = 'User-Agent';
                 Object.keys(uas).forEach(k => addOpt(list, uas[k], k, 'ua'));
+            } else if (type === 'pos') {
+                title.innerText = 'Bar Position';
+                Object.keys(positions).forEach(k => addOpt(list, positions[k], k, 'pos'));
             }
             document.getElementById('pickerOverlay').style.display = 'flex';
         }
 
         function addOpt(parent, label, key, type) {
-            const current = localStorage.getItem(type) || (type === 'engine' ? 'google' : 'default');
+            const current = localStorage.getItem(type) || (type === 'engine' ? 'google' : (type === 'pos' ? 'bottom' : 'default'));
             const div = document.createElement('div');
             div.className = 'opt' + (current === key ? ' selected' : '');
             div.innerHTML = `<span>${label}</span>${current === key ? '✓' : ''}`;
             div.onclick = () => {
                 localStorage.setItem(type, key);
                 if (type === 'engine') Android.setSearchEngine(key);
-                else Android.setUserAgent(key);
+                else if (type === 'ua') Android.setUserAgent(key);
+                else if (type === 'pos') Android.setBarPosition(key);
                 refreshUI();
                 closePicker();
             };
@@ -208,9 +224,11 @@
         function refreshUI() {
             const engine = localStorage.getItem('engine') || 'google';
             const ua = localStorage.getItem('ua') || 'default';
+            const pos = localStorage.getItem('pos') || 'bottom';
             document.getElementById('engine_val').innerText = engines[engine];
             document.getElementById('engine_desc').innerText = engines[engine];
             document.getElementById('ua_val').innerText = uas[ua];
+            document.getElementById('pos_val').innerText = positions[pos];
             document.getElementById('ad_toggle').checked = localStorage.getItem('ad_block') === 'true';
             document.getElementById('js_toggle').checked = localStorage.getItem('js_enabled') !== 'false';
         }

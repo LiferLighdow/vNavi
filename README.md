@@ -1,8 +1,8 @@
-# vNavi Browser
-
 <p align="center">
   <img src="logo.svg" width="100" height="100" alt="vNavi Logo">
 </p>
+
+# vNavi Browser
 
 <p align="center">
   <strong>Inspired by Min Browser, re-engineered for Android under 100KB.</strong>

@@ -5,8 +5,12 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -51,6 +55,9 @@ import java.util.Set;
 public class MainActivity extends Activity {
 
     private FrameLayout webViewContainer;
+    private FrameLayout fullscreenContainer;
+    private View customView;
+    private WebChromeClient.CustomViewCallback customViewCallback;
     private static final String HOME_URL = "file:///android_asset/index.html";
     private static final String SETTINGS_URL = "file:///android_asset/settings.html";
     
@@ -72,6 +79,8 @@ public class MainActivity extends Activity {
     private boolean isBarHidden = false;
     private String currentSearchEngine = "google";
     private String currentUserAgent = "default";
+    private String barPosition = "bottom";
+    private boolean isPwaMode = false;
     private long lastBackPressTime = 0;
 
     private List<WebView> tabList = new ArrayList<>();
@@ -116,6 +125,7 @@ public class MainActivity extends Activity {
         isAdBlockEnabled = prefs.getBoolean("ad_block", false);
         currentSearchEngine = prefs.getString("engine", "google");
         currentUserAgent = prefs.getString("user_agent", "default");
+        barPosition = prefs.getString("bar_position", "bottom");
 
         Window window = getWindow();
         boolean isNightMode = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
@@ -130,7 +140,12 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.activity_main);
 
+        isPwaMode = getIntent().getBooleanExtra("is_pwa", false);
+        String startUrl = isPwaMode ? getIntent().getStringExtra("pwa_url") : HOME_URL;
+        if (startUrl == null) startUrl = HOME_URL;
+
         webViewContainer = findViewById(R.id.webview_container);
+        fullscreenContainer = findViewById(R.id.fullscreen_container);
         bottomControlArea = findViewById(R.id.bottom_control_area);
         bottomBar = findViewById(R.id.bottom_bar);
         progressBar = findViewById(R.id.progress_bar);
@@ -147,17 +162,82 @@ public class MainActivity extends Activity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 android.graphics.Insets systemBars = insets.getInsets(WindowInsets.Type.systemBars());
                 v.setPadding(0, systemBars.top, 0, 0);
-                bottomControlArea.setPadding(0, 10, 0, systemBars.bottom + 20);
+                if ("top".equals(barPosition)) {
+                    bottomControlArea.setPadding(0, 10, 0, 10);
+                } else {
+                    bottomControlArea.setPadding(0, 10, 0, systemBars.bottom + 20);
+                }
                 updateSystemBarIcons(window, isNightMode);
             }
             return insets;
         });
 
-        addNewTab(HOME_URL);
         setupBottomBar();
         setupSearchOverlay();
         setupPillSwipe();
         setupFindInPage();
+        updateBarLayout();
+
+        addNewTab(startUrl);
+        if (isPwaMode) {
+            isBarHidden = true;
+            bottomBar.setTranslationY(500); // 初始隱藏
+        }
+    }
+
+    private void installPwa() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            Toast.makeText(this, "Android 8.0+ required for this feature", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        WebView wv = getCurrentWebView();
+        String url = wv.getUrl();
+        String title = wv.getTitle();
+        if (url == null || url.startsWith("file:///")) {
+            Toast.makeText(this, "Cannot install this page", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
+        if (shortcutManager != null && shortcutManager.isRequestPinShortcutSupported()) {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setAction(Intent.ACTION_VIEW);
+            intent.putExtra("is_pwa", true);
+            intent.putExtra("pwa_url", url);
+            // 確保每次點擊都是開啟獨立的 PWA 實例
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+
+            Bitmap iconBitmap = wv.getFavicon();
+            Icon icon;
+            if (iconBitmap != null) {
+                icon = Icon.createWithBitmap(iconBitmap);
+            } else {
+                icon = Icon.createWithResource(this, R.mipmap.ic_launcher);
+            }
+
+            ShortcutInfo shortcutInfo = new ShortcutInfo.Builder(this, url)
+                    .setShortLabel(title != null ? title : "vNavi Web App")
+                    .setIcon(icon)
+                    .setIntent(intent)
+                    .build();
+
+            shortcutManager.requestPinShortcut(shortcutInfo, null);
+        }
+    }
+
+    private void updateBarLayout() {
+        LinearLayout mainContent = findViewById(R.id.main_content);
+        mainContent.removeView(bottomControlArea);
+        if ("top".equals(barPosition)) {
+            // 在 WebViewContainer 之前插入 (WebViewContainer 是 index 1, findBar 是 index 0)
+            mainContent.addView(bottomControlArea, 1);
+        } else {
+            // 加到最後面
+            mainContent.addView(bottomControlArea);
+        }
+        // 強制重新整理 Insets
+        findViewById(R.id.root_view).requestApplyInsets();
     }
 
     private void setupFindInPage() {
@@ -220,6 +300,37 @@ public class MainActivity extends Activity {
             public void onProgressChanged(WebView view, int newProgress) {
                 if (view == getCurrentWebView()) progressBar.setProgress(newProgress);
             }
+
+            @Override
+            public void onShowCustomView(View view, CustomViewCallback callback) {
+                if (customView != null) {
+                    onHideCustomView();
+                    return;
+                }
+                customView = view;
+                customViewCallback = callback;
+                
+                fullscreenContainer.addView(customView);
+                fullscreenContainer.setVisibility(View.VISIBLE);
+                webViewContainer.setVisibility(View.GONE);
+                bottomControlArea.setVisibility(View.GONE);
+                findBar.setVisibility(View.GONE);
+                searchOverlay.setVisibility(View.GONE);
+
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (imm != null) imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    getWindow().getInsetsController().hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                } else {
+                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                }
+            }
+
+            @Override
+            public void onHideCustomView() {
+                hideFullscreen();
+            }
         });
 
         wv.setFindListener((activeMatchOrdinal, numberOfMatches, isDoneCounting) -> {
@@ -234,10 +345,18 @@ public class MainActivity extends Activity {
             @JavascriptInterface public void toggleJS(boolean enabled) { runOnUiThread(() -> { getCurrentWebView().getSettings().setJavaScriptEnabled(enabled); getSharedPreferences("vNavi", MODE_PRIVATE).edit().putBoolean("js_enabled", enabled).apply(); getCurrentWebView().reload(); }); }
             @JavascriptInterface public void setSearchEngine(String engine) { runOnUiThread(() -> { currentSearchEngine = engine; getSharedPreferences("vNavi", MODE_PRIVATE).edit().putString("engine", engine).apply(); }); }
             @JavascriptInterface public void setUserAgent(String uaKey) { runOnUiThread(() -> { currentUserAgent = uaKey; getSharedPreferences("vNavi", MODE_PRIVATE).edit().putString("user_agent", uaKey).apply(); updateAllWebViewsUA(); }); }
+            @JavascriptInterface public void setBarPosition(String pos) { runOnUiThread(() -> { barPosition = pos; getSharedPreferences("vNavi", MODE_PRIVATE).edit().putString("bar_position", pos).apply(); updateBarLayout(); }); }
         }, "Android");
 
         wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            wv.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                if (scrollY > oldScrollY + 10) toggleBottomBar(false);
+                else if (scrollY < oldScrollY - 10) toggleBottomBar(true);
+            });
+        }
+
         // 核心：長按圖片下載功能
         wv.setOnLongClickListener(v -> {
             WebView.HitTestResult result = wv.getHitTestResult();
@@ -415,6 +534,12 @@ public class MainActivity extends Activity {
         });
 
         menuView.findViewById(R.id.menu_downloads).setOnClickListener(v -> { startActivity(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)); popupWindow.dismiss(); });
+        
+        menuView.findViewById(R.id.menu_install).setOnClickListener(v -> {
+            installPwa();
+            popupWindow.dismiss();
+        });
+
         menuView.findViewById(R.id.menu_settings).setOnClickListener(v -> { wv.loadUrl(SETTINGS_URL); popupWindow.dismiss(); });
 
         menuView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
@@ -483,8 +608,14 @@ public class MainActivity extends Activity {
     }
 
     private void toggleBottomBar(boolean show) {
-        if (show && isBarHidden) { bottomBar.animate().translationY(0).setDuration(200).start(); isBarHidden = false; }
-        else if (!show && !isBarHidden) { bottomBar.animate().translationY(bottomBar.getHeight() + 200).setDuration(200).start(); isBarHidden = true; }
+        if (show && isBarHidden) { 
+            bottomBar.animate().translationY(0).setDuration(200).start(); 
+            isBarHidden = false; 
+        } else if (!show && !isBarHidden) { 
+            float translation = "top".equals(barPosition) ? -(bottomBar.getHeight() + 200) : (bottomBar.getHeight() + 200);
+            bottomBar.animate().translationY(translation).setDuration(200).start(); 
+            isBarHidden = true; 
+        }
     }
 
     private void updateUrlDisplay(String url) {
@@ -493,9 +624,31 @@ public class MainActivity extends Activity {
         else urlText.setText(url.replace("https://", "").replace("http://", ""));
     }
 
+    private void hideFullscreen() {
+        if (customView == null) return;
+
+        fullscreenContainer.removeView(customView);
+        fullscreenContainer.setVisibility(View.GONE);
+        customView = null;
+        if (customViewCallback != null) customViewCallback.onCustomViewHidden();
+
+        webViewContainer.setVisibility(View.VISIBLE);
+        bottomControlArea.setVisibility(View.VISIBLE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().getInsetsController().show(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        }
+    }
+
     @Override
     public void onBackPressed() {
-        if (searchOverlay.getVisibility() == View.VISIBLE) hideSearchUI();
+        if (customView != null) {
+            hideFullscreen();
+        } else if (searchOverlay.getVisibility() == View.VISIBLE) {
+            hideSearchUI();
+        }
         else if (findBar.getVisibility() == View.VISIBLE) { findBar.setVisibility(View.GONE); getCurrentWebView().clearMatches(); }
         else if (getCurrentWebView().canGoBack()) getCurrentWebView().goBack();
         else if (currentTabIndex > 0) switchTab(0);

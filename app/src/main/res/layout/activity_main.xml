@@ -6,6 +6,7 @@
     android:background="#000000">
 
     <LinearLayout
+        android:id="@+id/main_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -139,4 +140,11 @@
                 android:textSize="18sp" />
         </LinearLayout>
     </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/fullscreen_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:visibility="gone" />
 </RelativeLayout>

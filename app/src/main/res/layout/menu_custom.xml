@@ -44,6 +44,17 @@
         android:background="?android:attr/selectableItemBackground" />
 
     <TextView
+        android:id="@+id/menu_install"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:text="Install as App (PWA)"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:background="?android:attr/selectableItemBackground" />
+
+    <TextView
         android:id="@+id/menu_downloads"
         android:layout_width="match_parent"
         android:layout_height="48dp"

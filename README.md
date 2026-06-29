@@ -2,7 +2,7 @@
   <img src="logo.svg" width="100" height="100" alt="vNavi Logo">
 </p>
 
-# vNavi Browser
+<h1 align="center">vNavi Browser</h1>
 
 <p align="center">
   <strong>Inspired by Min Browser, re-engineered for Android under 100KB.</strong>

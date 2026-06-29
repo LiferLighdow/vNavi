@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>vNavi Apps</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card: #1c1c1e;
+            --accent: #0A84FF;
+            --text: #ffffff;
+            --danger: #FF453A;
+            --secondary: #2c2c2e;
+            --input-bg: #2c2c2e;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+
+        h2 { margin-top: 40px; margin-bottom: 30px; font-weight: 600; }
+
+        .app-list {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .app-item {
+            background-color: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            border: 0.5px solid #3a3a3c;
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .app-item:active { transform: scale(0.98); }
+
+        .app-icon-container {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            margin-right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .app-icon-img { width: 70%; height: 70%; object-fit: contain; }
+
+        .app-info { flex: 1; min-width: 0; }
+        .app-name { font-size: 16px; font-weight: 500; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .app-url { font-size: 12px; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Modal / Dialog */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(15px);
+        }
+
+        .modal {
+            background: var(--card);
+            width: 90%;
+            max-width: 380px;
+            border-radius: 24px;
+            padding: 24px;
+            border: 0.5px solid #3a3a3c;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 { margin-top: 0; margin-bottom: 20px; font-size: 20px; text-align: center; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 12px; opacity: 0.6; margin-bottom: 6px; margin-left: 4px; }
+
+        input[type="text"] {
+            width: 100%;
+            background: var(--input-bg);
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .icon-config {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #252527;
+            padding: 15px;
+            border-radius: 16px;
+        }
+
+        .preview-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .preview-box {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .preview-img { width: 70%; height: 70%; object-fit: contain; }
+
+        .hsl-controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .hsl-row { display: flex; align-items: center; gap: 10px; }
+        .hsl-row label { font-size: 10px; width: 12px; opacity: 0.5; }
+
+        input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: #3a3a3c;
+            border-radius: 2px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .color-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .color-tab {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: var(--secondary);
+            opacity: 0.5;
+        }
+        .color-tab.active { opacity: 1; background: var(--accent); }
+
+        .hex-input-row {
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .hex-input-row label { font-size: 12px; opacity: 0.5; }
+        .hex-field {
+            background: #1c1c1e;
+            border: 0.5px solid #3a3a3c;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            width: 80px;
+            text-align: center;
+            outline: none;
+        }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 24px; }
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border-radius: 14px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-save { background: var(--accent); color: white; }
+        .btn-cancel { background: var(--secondary); color: white; }
+        .btn-delete { background: var(--danger); color: white; width: 100%; margin-top: 10px; }
+
+        .icon-source-btns { display: flex; gap: 8px; margin-top: 8px; }
+        .source-btn {
+            flex: 1;
+            padding: 8px;
+            background: var(--secondary);
+            border-radius: 8px;
+            font-size: 11px;
+            text-align: center;
+        }
+        .source-btn.active { background: var(--accent); }
+
+    </style>
+</head>
+<body>
+
+    <h2>Apps</h2>
+
+    <div class="app-list" id="appList"></div>
+
+    <div class="overlay" id="modalOverlay">
+        <div class="modal">
+            <h3 id="modalTitle">Edit App</h3>
+
+            <div class="icon-config">
+                <div class="color-tabs">
+                    <div id="tabBg" class="color-tab active" onclick="setEditMode('bg')">Background</div>
+                    <div id="tabFg" class="color-tab" onclick="setEditMode('fg')">Text / Foreground</div>
+                </div>
+                <div class="preview-area">
+                    <div id="previewBox" class="preview-box">
+                        <img id="previewImg" class="preview-img">
+                        <span id="previewText"></span>
+                    </div>
+                    <div class="hsl-controls">
+                        <div class="hsl-row">
+                            <label>H</label>
+                            <input type="range" id="hue" min="0" max="360" value="200" oninput="updateHsl()">
+                        </div>
+                        <div class="hsl-row">
+                            <label>S</label>
+                            <input type="range" id="sat" min="0" max="100" value="50" oninput="updateHsl()">
+                        </div>
+                        <div class="hsl-row">
+                            <label>L</label>
+                            <input type="range" id="lum" min="0" max="100" value="50" oninput="updateHsl()">
+                        </div>
+                    </div>
+                </div>
+                <div class="hex-input-row">
+                    <label>Hex Color</label>
+                    <input type="text" id="hexField" class="hex-field" oninput="updateHex()">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="editName">
+            </div>
+
+            <div class="form-group">
+                <label>URL</label>
+                <input type="text" id="editUrl">
+            </div>
+
+            <div class="form-group">
+                <label>Icon Source</label>
+                <div class="icon-source-btns">
+                    <div class="source-btn" id="srcAuto" onclick="useAutoIcon()">Auto (Text)</div>
+                    <div class="source-btn" onclick="Android.openImagePicker()">Gallery</div>
+                    <div class="source-btn" onclick="fetchFavicon()">Favicon</div>
+                </div>
+                <div class="hex-input-row" style="margin-top: 10px;">
+                    <label>Img URL</label>
+                    <input type="text" id="iconUrlField" class="hex-field" style="width: 100%; text-align: left;" placeholder="https://..." oninput="updateFromUrlField()">
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <div class="btn btn-cancel" onclick="closeModal()">Cancel</div>
+                <div class="btn btn-save" onclick="saveEdit()">Save</div>
+            </div>
+            <div class="btn btn-delete" onclick="deleteCurrentApp()">Delete App</div>
+        </div>
+    </div>
+
+    <script>
+        let pwas = [];
+        let editingIndex = -1;
+        let currentBg = "#1e293b";
+        let currentFg = "#ffffff";
+        let editMode = 'bg'; // 'bg' or 'fg'
+        let tempIcon = "";
+
+        function loadApps() {
+            try {
+                pwas = JSON.parse(Android.getPwas());
+                render();
+            } catch(e) {}
+        }
+
+        function render() {
+            const list = document.getElementById('appList');
+            if (pwas.length === 0) {
+                list.innerHTML = '<div style="margin-top:100px; opacity:0.4; text-align:center;">No apps installed.</div>';
+                return;
+            }
+
+            list.innerHTML = '';
+            pwas.forEach((app, index) => {
+                const item = document.createElement('div');
+                item.className = 'app-item';
+
+                let timer;
+                item.ontouchstart = () => timer = setTimeout(() => openModal(index), 600);
+                item.ontouchend = () => clearTimeout(timer);
+                item.onclick = () => { if(!timer || (Date.now() - timer < 600)) window.location.href = app.url; };
+
+                const bg = app.bgColor || "#1e293b";
+                const fg = app.fgColor || "#ffffff";
+                const iconSrc = app.icon ? (app.icon.startsWith('data:') ? app.icon : `data:image/png;base64,${app.icon}`) : "";
+
+                item.innerHTML = `
+                    <div class="app-icon-container" style="background-color: ${bg}; color: ${fg}">
+                        ${iconSrc ? `<img src="${iconSrc}" class="app-icon-img">` : `<span style="font-size:24px; font-weight:bold;">${app.name ? app.name[0] : '?'}</span>`}
+                    </div>
+                    <div class="app-info">
+                        <div class="app-name">${app.name}</div>
+                        <div class="app-url">${app.url.split('//')[1] || app.url}</div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function openModal(index) {
+            editingIndex = index;
+            const app = pwas[index];
+            document.getElementById('editName').value = app.name;
+            document.getElementById('editUrl').value = app.url;
+            currentBg = app.bgColor || "#1e293b";
+            currentFg = app.fgColor || "#ffffff";
+            tempIcon = app.icon || "";
+            document.getElementById('iconUrlField').value = (tempIcon.startsWith('http')) ? tempIcon : "";
+
+            setEditMode('bg');
+            updatePreview();
+            document.getElementById('modalOverlay').style.display = 'flex';
+        }
+
+        function setEditMode(mode) {
+            editMode = mode;
+            document.getElementById('tabBg').className = 'color-tab' + (mode === 'bg' ? ' active' : '');
+            document.getElementById('tabFg').className = 'color-tab' + (mode === 'fg' ? ' active' : '');
+            syncSlidersFromHex(mode === 'bg' ? currentBg : currentFg);
+        }
+
+        function updateHsl() {
+            const h = document.getElementById('hue').value;
+            const s = document.getElementById('sat').value;
+            const l = document.getElementById('lum').value;
+            const hex = hslToHex(h, s, l);
+            if (editMode === 'bg') currentBg = hex; else currentFg = hex;
+            document.getElementById('hexField').value = hex;
+            updatePreview();
+        }
+
+        function updateHex() {
+            let hex = document.getElementById('hexField').value;
+            if (!hex.startsWith('#')) hex = '#' + hex;
+            document.getElementById('hexField').value = hex;
+            if (/^#[0-9A-F]{6}$/i.test(hex)) {
+                if (editMode === 'bg') currentBg = hex; else currentFg = hex;
+                syncSlidersFromHex(hex);
+                updatePreview();
+            }
+        }
+
+        function syncSlidersFromHex(hex) {
+            const hsl = hexToHsl(hex);
+            document.getElementById('hue').value = hsl.h;
+            document.getElementById('sat').value = hsl.s;
+            document.getElementById('lum').value = hsl.l;
+            document.getElementById('hexField').value = hex;
+        }
+
+        function updatePreview() {
+            const box = document.getElementById('previewBox');
+            const img = document.getElementById('previewImg');
+            const txt = document.getElementById('previewText');
+            const name = document.getElementById('editName').value;
+
+            box.style.backgroundColor = currentBg;
+            box.style.color = currentFg;
+
+            if (tempIcon) {
+                img.src = tempIcon.startsWith('data:') ? tempIcon : `data:image/png;base64,${tempIcon}`;
+                img.style.display = 'block';
+                txt.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                txt.style.display = 'block';
+                txt.innerText = name ? name[0].toUpperCase() : '?';
+            }
+        }
+
+        function hexToHsl(hex) {
+            let r = parseInt(hex.slice(1, 3), 16) / 255;
+            let g = parseInt(hex.slice(3, 5), 16) / 255;
+            let b = parseInt(hex.slice(5, 7), 16) / 255;
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) h = s = 0;
+            else {
+                let d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+        }
+
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+
+        function onImagePicked(base64) {
+            tempIcon = base64;
+            document.getElementById('iconUrlField').value = "";
+            updatePreview();
+        }
+
+        function useAutoIcon() {
+            tempIcon = "";
+            document.getElementById('iconUrlField').value = "";
+            updatePreview();
+        }
+
+        function fetchFavicon() {
+            const url = document.getElementById('editUrl').value;
+            if (!url) return;
+            try {
+                const domain = new URL(url.startsWith('http') ? url : 'https://'+url).hostname;
+                tempIcon = `https://www.google.com/s2/favicons?sz=128&domain=${domain}`;
+                document.getElementById('iconUrlField').value = tempIcon;
+                updatePreview();
+            } catch(e) {}
+        }
+
+        function updateFromUrlField() {
+            tempIcon = document.getElementById('iconUrlField').value;
+            updatePreview();
+        }
+
+        function saveEdit() {
+            const name = document.getElementById('editName').value;
+            const url = document.getElementById('editUrl').value;
+            if (!name || !url) return;
+
+            pwas[editingIndex] = {
+                ...pwas[editingIndex],
+                name,
+                url,
+                bgColor: currentBg,
+                fgColor: currentFg,
+                icon: tempIcon.replace('data:image/png;base64,', '')
+            };
+
+            Android.savePwas(JSON.stringify(pwas));
+            closeModal();
+            render();
+        }
+
+        function deleteCurrentApp() {
+            if (confirm("Delete this app?")) {
+                pwas.splice(editingIndex, 1);
+                Android.savePwas(JSON.stringify(pwas));
+                closeModal();
+                render();
+            }
+        }
+
+        function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+
+        window.onload = loadApps;
+    </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 package com.liferlighdow.vnavi;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -17,6 +18,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Base64;
+import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -45,7 +49,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +66,7 @@ public class MainActivity extends Activity {
     private WebChromeClient.CustomViewCallback customViewCallback;
     private static final String HOME_URL = "file:///android_asset/index.html";
     private static final String SETTINGS_URL = "file:///android_asset/settings.html";
+    private static final String APPS_URL = "file:///android_asset/apps.html";
     
     private View bottomControlArea;
     private LinearLayout bottomBar;
@@ -178,10 +185,18 @@ public class MainActivity extends Activity {
         setupFindInPage();
         updateBarLayout();
 
+        // 處理 Launcher 的「建立捷徑」請求
+        if (Intent.ACTION_CREATE_SHORTCUT.equals(getIntent().getAction())) {
+            showAppsMenuForShortcut();
+            return;
+        }
+
         addNewTab(startUrl);
         if (isPwaMode) {
             isBarHidden = true;
-            bottomBar.setTranslationY(500); // 初始隱藏
+            bottomControlArea.setVisibility(View.GONE);
+            // 讓它在多工界面看起來像獨立 App
+            setTaskDescription(new ActivityManager.TaskDescription(null, null, Color.BLACK));
         }
     }
 
@@ -199,30 +214,68 @@ public class MainActivity extends Activity {
             return;
         }
 
+        Bitmap favicon = wv.getFavicon();
+        String iconBase64 = "";
+        if (favicon != null) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            favicon.compress(Bitmap.CompressFormat.PNG, 100, baos);
+            iconBase64 = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
+        }
+
+        // 1. 保存到內部的 PWA 列表
+        try {
+            SharedPreferences prefs = getSharedPreferences("vNavi", MODE_PRIVATE);
+            JSONArray arr = new JSONArray(prefs.getString("pwas", "[]"));
+            int existsIndex = -1;
+            for (int i = 0; i < arr.length(); i++) {
+                if (arr.getJSONObject(i).getString("url").equals(url)) { existsIndex = i; break; }
+            }
+            
+            JSONObject obj = (existsIndex != -1) ? arr.getJSONObject(existsIndex) : new JSONObject();
+            obj.put("name", title != null ? title : "Web App");
+            obj.put("url", url);
+            if (!iconBase64.isEmpty()) obj.put("icon", iconBase64);
+            
+            if (existsIndex == -1) arr.put(obj);
+            else arr.put(existsIndex, obj);
+            
+            prefs.edit().putString("pwas", arr.toString()).apply();
+            Toast.makeText(this, "Added to Apps", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {}
+
+        // 2. 建立捷徑
         ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
         if (shortcutManager != null && shortcutManager.isRequestPinShortcutSupported()) {
             Intent intent = new Intent(this, MainActivity.class);
             intent.setAction(Intent.ACTION_VIEW);
             intent.putExtra("is_pwa", true);
             intent.putExtra("pwa_url", url);
-            // 確保每次點擊都是開啟獨立的 PWA 實例
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
 
-            Bitmap iconBitmap = wv.getFavicon();
             Icon icon;
-            if (iconBitmap != null) {
-                icon = Icon.createWithBitmap(iconBitmap);
+            if (favicon != null) {
+                icon = Icon.createWithBitmap(favicon);
             } else {
                 icon = Icon.createWithResource(this, R.mipmap.ic_launcher);
             }
 
             ShortcutInfo shortcutInfo = new ShortcutInfo.Builder(this, url)
-                    .setShortLabel(title != null ? title : "vNavi Web App")
+                    .setShortLabel(title != null ? title : "vNavi App")
                     .setIcon(icon)
                     .setIntent(intent)
                     .build();
 
             shortcutManager.requestPinShortcut(shortcutInfo, null);
+            
+            // 3. 更新動態捷徑
+            List<ShortcutInfo> dynamicShortcuts = shortcutManager.getDynamicShortcuts();
+            List<ShortcutInfo> updatedShortcuts = new ArrayList<>(dynamicShortcuts);
+            for (int i = 0; i < updatedShortcuts.size(); i++) {
+                if (updatedShortcuts.get(i).getId().equals(url)) { updatedShortcuts.remove(i); break; }
+            }
+            updatedShortcuts.add(0, shortcutInfo);
+            if (updatedShortcuts.size() > 4) updatedShortcuts = updatedShortcuts.subList(0, 4);
+            shortcutManager.setDynamicShortcuts(updatedShortcuts);
         }
     }
 
@@ -281,6 +334,10 @@ public class MainActivity extends Activity {
                 if (view == getCurrentWebView()) {
                     progressBar.setVisibility(View.GONE);
                     updateUrlDisplay(url);
+                    // PWA 模式下動態更新任務列標題
+                    if (isPwaMode) {
+                        setTaskDescription(new ActivityManager.TaskDescription(view.getTitle(), view.getFavicon(), Color.BLACK));
+                    }
                 }
             }
             @Override
@@ -346,6 +403,9 @@ public class MainActivity extends Activity {
             @JavascriptInterface public void setSearchEngine(String engine) { runOnUiThread(() -> { currentSearchEngine = engine; getSharedPreferences("vNavi", MODE_PRIVATE).edit().putString("engine", engine).apply(); }); }
             @JavascriptInterface public void setUserAgent(String uaKey) { runOnUiThread(() -> { currentUserAgent = uaKey; getSharedPreferences("vNavi", MODE_PRIVATE).edit().putString("user_agent", uaKey).apply(); updateAllWebViewsUA(); }); }
             @JavascriptInterface public void setBarPosition(String pos) { runOnUiThread(() -> { barPosition = pos; getSharedPreferences("vNavi", MODE_PRIVATE).edit().putString("bar_position", pos).apply(); updateBarLayout(); }); }
+            @JavascriptInterface public String getPwas() { return getSharedPreferences("vNavi", MODE_PRIVATE).getString("pwas", "[]"); }
+            @JavascriptInterface public void savePwas(String json) { getSharedPreferences("vNavi", MODE_PRIVATE).edit().putString("pwas", json).apply(); }
+            @JavascriptInterface public void openImagePicker() { runOnUiThread(() -> { Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI); startActivityForResult(intent, 1001); }); }
         }, "Android");
 
         wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
@@ -540,11 +600,73 @@ public class MainActivity extends Activity {
             popupWindow.dismiss();
         });
 
+        menuView.findViewById(R.id.menu_apps).setOnClickListener(v -> {
+            wv.loadUrl(APPS_URL);
+            popupWindow.dismiss();
+        });
+
         menuView.findViewById(R.id.menu_settings).setOnClickListener(v -> { wv.loadUrl(SETTINGS_URL); popupWindow.dismiss(); });
 
         menuView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         int yOffset = -(menuView.getMeasuredHeight() + anchor.getHeight() + 20);
         popupWindow.showAsDropDown(anchor, -(menuView.getMeasuredWidth() - anchor.getWidth()), yOffset);
+    }
+
+    private void showAppsMenuForShortcut() {
+        SharedPreferences prefs = getSharedPreferences("vNavi", MODE_PRIVATE);
+        try {
+            JSONArray arr = new JSONArray(prefs.getString("pwas", "[]"));
+            if (arr.length() == 0) {
+                Toast.makeText(this, "No Apps available. Install some first!", Toast.LENGTH_SHORT).show();
+                finish(); return;
+            }
+            String[] names = new String[arr.length()];
+            for (int i = 0; i < arr.length(); i++) names[i] = arr.getJSONObject(i).getString("name");
+
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("Select App Shortcut")
+                .setItems(names, (dialog, which) -> {
+                    try {
+                        JSONObject obj = arr.getJSONObject(which);
+                        String url = obj.getString("url");
+                        String name = obj.getString("name");
+                        String iconBase64 = obj.optString("icon", "");
+
+                        Intent shortcutIntent = new Intent(this, MainActivity.class);
+                        shortcutIntent.setAction(Intent.ACTION_VIEW);
+                        shortcutIntent.putExtra("is_pwa", true);
+                        shortcutIntent.putExtra("pwa_url", url);
+                        shortcutIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+
+                        Intent resultIntent = new Intent();
+                        resultIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
+                        resultIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, name);
+
+                        Bitmap finalIcon;
+                        if (!iconBase64.isEmpty()) {
+                            byte[] decodedByte = Base64.decode(iconBase64, Base64.DEFAULT);
+                            finalIcon = android.graphics.BitmapFactory.decodeByteArray(decodedByte, 0, decodedByte.length);
+                        } else {
+                            // 建立一個帶字母的正方形圖示
+                            finalIcon = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888);
+                            android.graphics.Canvas canvas = new android.graphics.Canvas(finalIcon);
+                            android.graphics.Paint paint = new android.graphics.Paint();
+                            paint.setColor(Color.DKGRAY);
+                            canvas.drawRect(0, 0, 128, 128, paint);
+                            paint.setColor(Color.WHITE);
+                            paint.setTextSize(60);
+                            paint.setTextAlign(android.graphics.Paint.Align.CENTER);
+                            canvas.drawText(name.substring(0, 1).toUpperCase(), 64, 85, paint);
+                        }
+                        resultIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, finalIcon);
+                        
+                        setResult(RESULT_OK, resultIntent);
+                        finish();
+                    } catch (Exception e) { finish(); }
+                })
+                .setOnCancelListener(dialog -> finish())
+                .show();
+        } catch (Exception e) { finish(); }
     }
 
     private void showTabListMenu(View anchor) {
@@ -608,6 +730,7 @@ public class MainActivity extends Activity {
     }
 
     private void toggleBottomBar(boolean show) {
+        if (isPwaMode) return;
         if (show && isBarHidden) { 
             bottomBar.animate().translationY(0).setDuration(200).start(); 
             isBarHidden = false; 
@@ -621,6 +744,7 @@ public class MainActivity extends Activity {
     private void updateUrlDisplay(String url) {
         if (url == null || url.equals(HOME_URL)) urlText.setText("Search or enter URL");
         else if (url.equals(SETTINGS_URL)) urlText.setText("Settings");
+        else if (url.equals(APPS_URL)) urlText.setText("Apps");
         else urlText.setText(url.replace("https://", "").replace("http://", ""));
     }
 
@@ -639,6 +763,22 @@ public class MainActivity extends Activity {
             getWindow().getInsetsController().show(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
         } else {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1001 && resultCode == RESULT_OK && data != null) {
+            Uri imageUri = data.getData();
+            try {
+                Bitmap bitmap = android.provider.MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                // 壓縮至合適大小
+                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 128, 128, true);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                scaled.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                String base64 = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
+                getCurrentWebView().loadUrl("javascript:onImagePicked('data:image/png;base64," + base64.replace("\n", "") + "')");
+            } catch (Exception e) {}
         }
     }
 

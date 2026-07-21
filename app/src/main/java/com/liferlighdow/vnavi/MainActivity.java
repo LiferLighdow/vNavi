@@ -88,6 +88,7 @@ public class MainActivity extends Activity {
     private String currentUserAgent = "default";
     private String barPosition = "bottom";
     private boolean isPwaMode = false;
+    private int pwaThemeColor = Color.BLACK;
     private long lastBackPressTime = 0;
 
     private List<WebView> tabList = new ArrayList<>();
@@ -147,10 +148,6 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.activity_main);
 
-        isPwaMode = getIntent().getBooleanExtra("is_pwa", false);
-        String startUrl = isPwaMode ? getIntent().getStringExtra("pwa_url") : HOME_URL;
-        if (startUrl == null) startUrl = HOME_URL;
-
         webViewContainer = findViewById(R.id.webview_container);
         fullscreenContainer = findViewById(R.id.fullscreen_container);
         bottomControlArea = findViewById(R.id.bottom_control_area);
@@ -191,12 +188,71 @@ public class MainActivity extends Activity {
             return;
         }
 
-        addNewTab(startUrl);
+        handleIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getAction();
+
+        String startUrl = null;
+        String label = null;
+        String themeColorStr = null;
+        boolean fromLauncher = "com.liferlighdow.vnavi.action.RUN_PWA".equals(action);
+
+        if (fromLauncher) {
+            isPwaMode = true;
+            startUrl = intent.getStringExtra("url");
+            label = intent.getStringExtra("label");
+            themeColorStr = intent.getStringExtra("theme_color");
+        } else {
+            isPwaMode = intent.getBooleanExtra("is_pwa", false);
+            if (isPwaMode) {
+                startUrl = intent.getStringExtra("pwa_url");
+            } else if (Intent.ACTION_VIEW.equals(action) && intent.getData() != null) {
+                startUrl = intent.getDataString();
+            }
+        }
+
+        if (startUrl == null || startUrl.isEmpty()) {
+            if (tabList.isEmpty()) startUrl = HOME_URL;
+            else return;
+        }
+
+        if (tabList.isEmpty()) {
+            addNewTab(startUrl);
+        } else {
+            getCurrentWebView().loadUrl(startUrl);
+        }
+
         if (isPwaMode) {
             isBarHidden = true;
             bottomControlArea.setVisibility(View.GONE);
-            // 讓它在多工界面看起來像獨立 App
-            setTaskDescription(new ActivityManager.TaskDescription(null, null, Color.BLACK));
+
+            pwaThemeColor = Color.BLACK;
+            if (themeColorStr != null && !themeColorStr.isEmpty()) {
+                try { pwaThemeColor = Color.parseColor(themeColorStr); } catch (Exception e) {}
+            }
+
+            Window window = getWindow();
+            window.setStatusBarColor(pwaThemeColor);
+            window.setNavigationBarColor(pwaThemeColor);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                setTaskDescription(new ActivityManager.TaskDescription(label, R.mipmap.ic_launcher, pwaThemeColor));
+            } else {
+                setTaskDescription(new ActivityManager.TaskDescription(label, null, pwaThemeColor));
+            }
+        } else {
+            bottomControlArea.setVisibility(View.VISIBLE);
+            isBarHidden = false;
         }
     }
 
@@ -336,7 +392,7 @@ public class MainActivity extends Activity {
                     updateUrlDisplay(url);
                     // PWA 模式下動態更新任務列標題
                     if (isPwaMode) {
-                        setTaskDescription(new ActivityManager.TaskDescription(view.getTitle(), view.getFavicon(), Color.BLACK));
+                        setTaskDescription(new ActivityManager.TaskDescription(view.getTitle(), view.getFavicon(), pwaThemeColor));
                     }
                 }
             }

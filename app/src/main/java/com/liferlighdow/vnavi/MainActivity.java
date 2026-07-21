@@ -813,7 +813,7 @@ public class MainActivity extends Activity {
         if (customViewCallback != null) customViewCallback.onCustomViewHidden();
 
         webViewContainer.setVisibility(View.VISIBLE);
-        bottomControlArea.setVisibility(View.VISIBLE);
+        bottomControlArea.setVisibility(isPwaMode ? View.GONE : View.VISIBLE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().getInsetsController().show(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
